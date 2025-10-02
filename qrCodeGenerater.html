@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>QRコード生成</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    #qrcode-area { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
+    .qr-block { text-align: center; margin-bottom: 30px; }
+  </style>
+</head>
+<body>
+  <h1>きゅーあーるこーど生成</h1>
+  <textarea id="idInput" rows="8" cols="40" placeholder="IDを改行区切りで入力"></textarea><br>
+  <button onclick="generateQRCodes()">QRコード生成</button>
+  <div id="qrcode-area"></div>
+
+  <script>
+    function generateQRCodes() {
+      const area = document.getElementById('qrcode-area');
+      area.innerHTML = ""; // クリア
+      const ids = document.getElementById('idInput').value
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      ids.forEach(id => {
+        const url = "https://nz-hishosai.com/res?id=" + id;
+        // QRコード表示ブロック作成
+        const block = document.createElement('div');
+        block.className = 'qr-block';
+        // QRコード描画用div
+        const qrDiv = document.createElement('div');
+        // URL表示
+        const label = document.createElement('div');
+        label.textContent = url;
+        label.style.fontSize = "0.9em";
+        label.style.marginBottom = "10px";
+        block.appendChild(label);
+        block.appendChild(qrDiv);
+        area.appendChild(block);
+        // QRコード生成
+        new QRCode(qrDiv, {
+          text: url,
+          width: 150,
+          height: 150
+        });
+      });
+    }
+  </script>
+</body>
+</html>
