@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>予約確認（来場者）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 24px; }
+    input, button { font-size: 16px; padding: 8px; }
+    .row { margin: 8px 0; }
+    table { border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+  <h1>予約確認ページ</h1>
+  <div class="row">
+    <label>QR ID: <input id="qr" size="40" placeholder="URL末尾のID（例: AbC123...）" /></label>
+    <button id="fetchBtn">確認</button>
+  </div>
+  <div id="result"></div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    // ここを書き換え
+    const SUPABASE_URL = 'https://ktlrdrdpjgdehpayjbrs.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0bHJkcmRwamdkZWhwYXlqYnJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNDc1NjEsImV4cCI6MjA3NDgyMzU2MX0.SCh9aOh7Pw18G9oxSYm1F1fTKTSps-c77qyIJn17FmE';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // /t/{qr_id} で来たら自動入力
+    const qrInput = document.getElementById('qr');
+    const m = location.pathname.match(/\/t\/([^/]+)$/);
+    if (m) {
+      qrInput.value = m[1];
+      setTimeout(fetchReservations, 0);
+    }
+
+    document.getElementById('fetchBtn').addEventListener('click', fetchReservations);
+
+    async function fetchReservations() {
+      const qr = qrInput.value.trim();
+      const result = document.getElementById('result');
+      result.textContent = '読み込み中…';
+      if (!qr) { result.textContent = 'QR ID を入力してください'; return; }
+      const { data, error } = await supabase.rpc('get_reservations_public', { qr });
+      if (error) { result.textContent = 'エラー: ' + error.message; return; }
+      if (!data || data.length === 0) {
+        result.textContent = 'まだ割り当てはありません。受付でご確認ください。';
+        return;
+      }
+      const rows = data.map(r => `
+        <tr>
+          <td>${r.exhibit_slug}</td>
+          <td>${r.exhibit_name}</td>
+          <td>${r.reservation_time ? new Date(r.reservation_time).toLocaleString() : '-'}</td>
+          <td>${r.status}</td>
+        </tr>`).join('');
+      result.innerHTML = `
+        <table>
+          <thead><tr><th>展示</th><th>名称</th><th>時間</th><th>状態</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+  </script>
+</body>
+</html>
