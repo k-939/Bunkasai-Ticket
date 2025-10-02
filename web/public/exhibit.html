@@ -35,6 +35,10 @@
     </div>
 
     <h3>予約の割り当て</h3>
+    <!-- QRコードスキャナー -->
+    <video id="video" width="300" height="200"></video>
+    <p><span id="result"></span></p>
+    
     <div class="row">
       <strong>展示</strong>:
       <span id="exhibitLabel" class="mono"></span>
@@ -121,6 +125,30 @@
       }
     }
     refreshUI();
+    
+    // QRコードスキャナー
+    import { BrowserMultiFormatReader } from 'https://cdn.skypack.dev/@zxing/browser';
+
+    const video = document.getElementById("video");
+    const resultElem = document.getElementById("result");
+    const codeReader = new BrowserMultiFormatReader();
+
+    async function startScan() {
+      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+      if (devices.length === 0) {
+        resultElem.textContent = "カメラが見つかりません";
+        return;
+      }
+      codeReader.decodeFromVideoDevice(devices[0].deviceId, video, (result, err) => {
+        if (result) {
+          resultElem.textContent = result.getText();
+          if (result.getText().startsWith("http")) {
+            window.open(result.getText(), "_blank");
+          }
+        }
+      });
+    }
+    startScan();
 
     document.getElementById('loginBtn').addEventListener('click', async () => {
       authMsg.textContent = 'ログイン中…';
@@ -140,6 +168,10 @@
     document.getElementById('assignBtn').addEventListener('click', async () => {
       msg.className = 'muted';
       msg.textContent = '送信中…';
+      // QRコードで読み取った値をセット
+      if(document.getElementById('result').textContent) {
+        (document.getElementById('qr')).value = document.getElementById('result').textContent;
+      }
       const qr = (document.getElementById('qr')).value.trim();
       const at_time_local = (document.getElementById('time')).value;
       const new_status = (document.getElementById('status')).value;
