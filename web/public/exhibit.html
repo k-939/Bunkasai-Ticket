@@ -149,9 +149,10 @@
                   inversionAttempts: "dontInvert",
               });
               if (code) {
-                  document.getElementById("qrLabel").innerText = code.data;
+                  document.getElementById("qr").value = code.data;
+                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取りました。"
               } else {
-                  document.getElementById("outputMessage").innerText = "No QR code detected.";
+                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取れませんでした。";
               }
           }
           requestAnimationFrame(tick);
