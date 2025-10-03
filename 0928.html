@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Supabase Test</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Supabase Visitors</h1>
+  <button onclick="addVisitor()">Add Visitor</button>
+  <button onclick="loadVisitors()">Load Visitors</button>
+
+  <pre id="output"></pre>
+
+  <script>
+    const { createClient } = supabase
+
+    const supabaseUrl = "https://mplogabikpmjjimrdnsl.supabase.co"
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wbG9nYWJpa3BtamppbXJkbnNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkwNDA2OTEsImV4cCI6MjA3NDYxNjY5MX0.a0HGbpzMfBhoeB09ReFH4mLpUEN6irks7z9Lz0EYhfo"
+    const client = createClient(supabaseUrl, supabaseKey)
+
+    async function addVisitor() {
+      const { data, error } = await client
+        .from("visitors")
+        .insert([
+          { reservedTime: new Date().toISOString(), exhibitionVenue: "J2A" }
+        ])
+
+      document.getElementById("output").textContent = error
+        ? "Error: " + error.message
+        : JSON.stringify(data, null, 2)
+    }
+
+    async function loadVisitors() {
+      const { data, error } = await client
+        .from("visitors")
+        .select("*")
+        .order("reservedTime", { ascending: true })
+
+      document.getElementById("output").textContent = error
+        ? "Error: " + error.message
+        : JSON.stringify(data, null, 2)
+    }
+  </script>
+</body>
+</html>
