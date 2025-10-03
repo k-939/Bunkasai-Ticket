@@ -177,6 +177,8 @@
       await refreshUI();
     });
 
+    document.getElementById('time').value = new Date().toISOString().slice(0,16);
+
     document.getElementById('assignBtn').addEventListener('click', async () => {
       msg.className = 'muted';
       msg.textContent = '送信中…';
