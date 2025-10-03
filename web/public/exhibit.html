@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>展示側 受付ツール（試作）</title>
+  <script src="../../scripts/jsQR.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 24px; }
@@ -35,16 +36,17 @@
     </div>
 
     <h3>予約の割り当て</h3>
-    <!-- QRコードスキャナー -->
-    <video id="video" width="300" height="200"></video>
-    <p><span id="result"></span></p>
+     <canvas id="canvas" style="width:100%"></canvas>
+    <div id="output">
+      <div id="outputMessage">No QR code detected.</div>
+    </div>
     
     <div class="row">
       <strong>展示</strong>:
       <span id="exhibitLabel" class="mono"></span>
       <span id="exhibitWarn" class="err"></span>
     </div>
-    <div class="row"><label>QR ID <input id="qr" size="40" placeholder="スキャン or 入力"></label></div>
+    <div class="row"><label id="qrLabel">QR ID <input id="qr" size="40" placeholder="スキャン or 入力"></label></div>
     <div class="row"><label>時刻 <input id="time" type="datetime-local"></label></div>
     <div class="row">
       <label>状態
@@ -126,29 +128,35 @@
     }
     refreshUI();
     
-    // QRコードスキャナー
-    import { BrowserMultiFormatReader } from 'https://cdn.skypack.dev/@zxing/browser';
+      var video = document.createElement("video");
+      var canvasElement = document.getElementById("canvas");
+      var canvas = canvasElement.getContext("2d");
 
-    const video = document.getElementById("video");
-    const resultElem = document.getElementById("result");
-    const codeReader = new BrowserMultiFormatReader();
-
-    async function startScan() {
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      if (devices.length === 0) {
-        resultElem.textContent = "カメラが見つかりません";
-        return;
-      }
-      codeReader.decodeFromVideoDevice(devices[0].deviceId, video, (result, err) => {
-        if (result) {
-          resultElem.textContent = result.getText();
-          if (result.getText().startsWith("http")) {
-            window.open(result.getText(), "_blank");
-          }
-        }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true);
+          video.play();
+          requestAnimationFrame(tick);
       });
-    }
-    startScan();
+	
+      function tick() {
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+              canvasElement.height = video.videoHeight;
+              canvasElement.width = video.videoWidth;
+              canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+              var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+              var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                  inversionAttempts: "dontInvert",
+              });
+              if (code) {
+                  document.getElementById("qr").value = code.data;
+                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取りました。"
+              } else {
+                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取れませんでした。";
+              }
+          }
+          requestAnimationFrame(tick);
+      }
 
     document.getElementById('password').addEventListener('keyup', (e) => {
       if (e.key === 'Enter') { document.getElementById('loginBtn').click(); }
@@ -180,10 +188,6 @@
       const at_time_local = (document.getElementById('time')).value;
       const new_status = (document.getElementById('status')).value;
       if (!qr || !currentExhibit || !at_time_local) { msg.textContent = '入力不足です'; return; }
-
-      // datetime-local はローカルタイム。UTCへ変換（Postgresはtimestamptz）
-      const at_time = new Date(at_time_local);
-      const iso = new Date(at_time.getTime() - at_time.getTimezoneOffset()*60000).toISOString().slice(0,19) + 'Z';
 
       const { data, error } = await supabase.rpc('assign_reservation', {
         qr,
