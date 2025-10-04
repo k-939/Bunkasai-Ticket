@@ -2,18 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>展示側 受付ツール（試作）</title>
-  <script src="../../scripts/jsQR.js"></script>
+  <title>展示側 受付ツール</title>
+  <link rel="stylesheet" href="../../assets/main.css" />
+  <script src="../../assets/jsQR.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 24px; }
-    input, button, select { font-size: 16px; padding: 8px; }
-    .row { margin: 8px 0; }
-    .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; max-width: 560px; }
-    .muted { color: #666; font-size: 14px; }
-    .ok { color: #0a0; }
-    .err { color: #c00; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   </style>
 </head>
 <body>
@@ -49,24 +42,19 @@
       <label>状態
         <select id="status">
           <option value="assigned">assigned</option>
-          <option value="checked_in">checked_in</option>
           <option value="completed">completed</option>
           <option value="canceled">canceled</option>
-          <option value="no_show">no_show</option>
-          <option value="issued">issued</option>
         </select>
       </label>
     </div>
     <div class="row">
-      <button id="assignBtn">登録/更新</button>
+      <button id="assignBtn">登録</button>
       <span id="msg" class="muted"></span>
     </div>
   </div>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-    // ここを書き換え
     const SUPABASE_URL = 'https://ktlrdrdpjgdehpayjbrs.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0bHJkcmRwamdkZWhwYXlqYnJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNDc1NjEsImV4cCI6MjA3NDgyMzU2MX0.SCh9aOh7Pw18G9oxSYm1F1fTKTSps-c77qyIJn17FmE';
 
@@ -129,7 +117,7 @@
       var canvasElement = document.getElementById("canvas");
       var canvas = canvasElement.getContext("2d");
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(function(stream) {
           video.srcObject = stream;
           video.setAttribute("playsinline", true);
           video.play();
@@ -195,7 +183,7 @@
         msg.textContent = 'エラー: ' + error.message;
       } else {
         msg.className = 'ok';
-        msg.textContent = `登録: ${data.qr_id} / ${currentExhibit.slug} / ${new Date(data.reservation_time).toLocaleString()} / ${data.status}`;
+        msg.textContent = `登録: ID:${data.qr_id} / 展示:${currentExhibit.slug} / 時間:${new Date(data.reservation_time).toLocaleString()}`;
       }
     });
   </script>
