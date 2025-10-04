@@ -37,9 +37,6 @@
 
     <h3>予約の割り当て</h3>
      <canvas id="canvas" style="width:100%"></canvas>
-    <div id="output">
-      <div id="outputMessage">No QR code detected.</div>
-    </div>
     
     <div class="row">
       <strong>展示</strong>:
@@ -150,10 +147,6 @@
               });
               if (code) {
                   document.getElementById("qr").value = code.data;
-                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取りました。"
-              } else {
-                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取れませんでした。";
-              }
           }
           requestAnimationFrame(tick);
       }
