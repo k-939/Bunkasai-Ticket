@@ -128,35 +128,32 @@
     }
     refreshUI();
     
-      var video = document.createElement("video");
-      var canvasElement = document.getElementById("canvas");
-      var canvas = canvasElement.getContext("2d");
+    var video = document.createElement("video");
+    var canvasElement = document.getElementById("canvas");
+    var canvas = canvasElement.getContext("2d");
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
-          video.srcObject = stream;
-          video.setAttribute("playsinline", true);
-          video.play();
-          requestAnimationFrame(tick);
-      });
-	
-      function tick() {
-          if (video.readyState === video.HAVE_ENOUGH_DATA) {
-              canvasElement.height = video.videoHeight;
-              canvasElement.width = video.videoWidth;
-              canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-              var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-              var code = jsQR(imageData.data, imageData.width, imageData.height, {
-                  inversionAttempts: "dontInvert",
-              });
-              if (code) {
-                  document.getElementById("qr").value = code.data;
-                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取りました。"
-              } else {
-                  document.getElementById("outputMessage").innerText = "QRコードを正常に読み取れませんでした。";
-              }
-          }
-          requestAnimationFrame(tick);
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+      video.srcObject = stream;
+      video.setAttribute("playsinline", true);
+      video.play();
+      requestAnimationFrame(tick);
+    });
+
+    function tick() {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvasElement.height = video.videoHeight;
+        canvasElement.width = video.videoWidth;
+        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+        var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        var code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+        if (code) {
+          document.getElementById("qr").value = code.data;
+        }
       }
+      requestAnimationFrame(tick);
+    }
 
     document.getElementById('password').addEventListener('keyup', (e) => {
       if (e.key === 'Enter') { document.getElementById('loginBtn').click(); }
