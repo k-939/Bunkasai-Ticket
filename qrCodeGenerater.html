@@ -2,52 +2,90 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>QRコード生成</title>
+  <title>QRコード生成＆PDF化</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: sans-serif; }
     #qrcode-area { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
     .qr-block { text-align: center; margin-bottom: 30px; }
+    #pdf-download { margin: 20px 0; font-size: 1.1em; }
   </style>
 </head>
 <body>
-  <h1>きゅーあーるこーど生成</h1>
-  <textarea id="idInput" rows="8" cols="40" placeholder="IDを改行区切りで入力"></textarea><br>
-  <button onclick="generateQRCodes()">QRコード生成</button>
+  <h1>きゅーあーるこーど生成＆PDF化</h1>
+  <button id="pdf-download">QRコード画像をPDFで一括ダウンロード</button>
   <div id="qrcode-area"></div>
 
   <script>
+    const QR_COUNT = 5;
+    const qrInfos = [];
+
+    function getRandomSixDigit() {
+      return (Math.floor(Math.random() * 999999) + 1).toString().padStart(6, '0');
+    }
+
     function generateQRCodes() {
       const area = document.getElementById('qrcode-area');
-      area.innerHTML = ""; // クリア
-      const ids = document.getElementById('idInput').value
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-
-      ids.forEach(id => {
-        const url = "https://nz-hishosai.com/res?id=" + id;
-        // QRコード表示ブロック作成
+      area.innerHTML = "";
+      qrInfos.length = 0;
+      for(let i = 0; i < QR_COUNT; i++) {
+        const id = getRandomSixDigit();
+        const url = id;
         const block = document.createElement('div');
         block.className = 'qr-block';
-        // QRコード描画用div
-        const qrDiv = document.createElement('div');
-        // URL表示
         const label = document.createElement('div');
         label.textContent = url;
         label.style.fontSize = "0.9em";
         label.style.marginBottom = "10px";
+        const qrDiv = document.createElement('div');
         block.appendChild(label);
         block.appendChild(qrDiv);
         area.appendChild(block);
-        // QRコード生成
         new QRCode(qrDiv, {
           text: url,
           width: 150,
           height: 150
         });
-      });
+        qrInfos.push({id, url, qrDiv});
+      }
     }
+
+    document.getElementById('pdf-download').onclick = async function() {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      for (let idx = 0; idx < qrInfos.length; idx++) {
+        const info = qrInfos[idx];
+        let canvas = info.qrDiv.querySelector('canvas');
+        if (!canvas) await new Promise(r => setTimeout(r, 100));
+        canvas = info.qrDiv.querySelector('canvas');
+        let imgData;
+        if (canvas) {
+          imgData = canvas.toDataURL("image/png");
+        } else {
+          const img = info.qrDiv.querySelector('img');
+          if (img) imgData = img.src;
+        }
+
+        // 整理券の文字をページ上部に太字で追加
+        pdf.text('整理券', 10, 20);
+
+        // ラベル（URL）をテキストで
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(12);
+        pdf.text(info.url, 10, 35);
+
+        // QR画像を貼付け
+        pdf.addImage(imgData, 'PNG', 10, 45, 50, 50);
+
+        // 次ページへ（最後は不要）
+        if (idx !== qrInfos.length - 1) pdf.addPage();
+      }
+      pdf.save("qrcodes.pdf");
+    };
+
+    generateQRCodes();
   </script>
 </body>
 </html>
