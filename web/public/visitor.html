@@ -3,20 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <title>予約確認ページ</title>
+  <link rel="stylesheet" href="../../assets/main.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="../../assets/jsQR.js"></script>
-  <style>
-    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 24px; }
-    input, button { font-size: 16px; padding: 8px; }
-    .row { margin: 8px 0; }
-    table { border-collapse: collapse; margin-top: 12px; }
-    th, td { border: 1px solid #ddd; padding: 8px 12px; }
-  </style>
 </head>
 <body>
   <h1>予約確認ページ</h1>
+  <canvas id="canvas" style="width:100%"></canvas>
   <div class="row">
-    <canvas id="canvas" style="width:100%"></canvas>
     <label>QR ID: <input id="qr" size="40" placeholder="URL末尾のID（例: AbC123...）" /></label>
     <button id="fetchBtn">確認</button>
   </div>
@@ -52,34 +46,7 @@
         result.textContent = 'まだ割り当てはありません。受付でご確認ください。';
         return;
       }
-       refreshUI();
-    
-      var video = document.createElement("video");
-      var canvasElement = document.getElementById("canvas");
-      var canvas = canvasElement.getContext("2d");
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(function(stream) {
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true);
-        video.play();
-        requestAnimationFrame(tick);
-      });
-	
-      function tick() {
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          canvasElement.height = video.videoHeight;
-          canvasElement.width = video.videoWidth;
-          canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-          var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-          var code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
-          });
-          if (code) {
-            document.getElementById("qr").value = code.data;
-          }
-          requestAnimationFrame(tick);
-        }
-      }
       const rows = data.map(r => `
         <tr>
           <td>${r.exhibit_slug}</td>
@@ -92,6 +59,49 @@
           <thead><tr><th>展示</th><th>名称</th><th>時間</th><th>状態</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
+    }
+
+    // QRコードスキャナーの初期化
+    var video = document.createElement("video");
+    var canvasElement = document.getElementById("canvas");
+    var canvas = canvasElement.getContext("2d");
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        requestAnimationFrame(tick);
+    }).catch(function(err) {
+        console.error("カメラアクセスエラー:", err);
+        canvasElement.style.display = 'none';
+        const errorMsg = document.createElement('div');
+        errorMsg.textContent = 'カメラにアクセスできませんでした。ブラウザの設定を確認してください。';
+        errorMsg.style.color = 'red';
+        canvasElement.parentNode.insertBefore(errorMsg, canvasElement);
+    });
+
+    function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            // キャンバスのサイズを動画に合わせて設定
+            canvasElement.height = video.videoHeight;
+            canvasElement.width = video.videoWidth;
+            
+            // CSSスタイルでの表示サイズも設定
+            const aspectRatio = video.videoWidth / video.videoHeight;
+            const maxWidth = Math.min(video.videoWidth, 600); // 最大幅を600pxに制限
+            canvasElement.style.width = maxWidth + 'px';
+            canvasElement.style.height = (maxWidth / aspectRatio) + 'px';
+            
+            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+            if (code) {
+                document.getElementById("qr").value = code.data;
+            }
+        }
+        requestAnimationFrame(tick);
     }
   </script>
 </body>
