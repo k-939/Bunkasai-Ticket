@@ -6,13 +6,11 @@
   <link rel="stylesheet" href="../../assets/main.css" />
   <script src="../../assets/jsQR.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-  </style>
 </head>
 <body>
   <h1>受付用ページ(prototype)</h1>
 
-  <div id="auth" class="card">
+  <div id="auth">
     <h3>ログイン</h3>
     <div class="row"><label>メール <input id="email" type="email" placeholder="exhibit-01@example.com"></label></div>
     <div class="row"><label>パスワード <input id="password" type="password"></label></div>
@@ -22,7 +20,7 @@
     </div>
   </div>
 
-  <div id="app" class="card" style="display:none">
+  <div id="app" style="display:none">
     <div class="row">
       <button id="logoutBtn">ログアウト</button>
       <span id="who" class="muted"></span>
@@ -113,31 +111,47 @@
     }
     refreshUI();
     
-      var video = document.createElement("video");
-      var canvasElement = document.getElementById("canvas");
-      var canvas = canvasElement.getContext("2d");
+    // QRコードスキャナーの初期化
+    var video = document.createElement("video");
+    var canvasElement = document.getElementById("canvas");
+    var canvas = canvasElement.getContext("2d");
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(function(stream) {
-          video.srcObject = stream;
-          video.setAttribute("playsinline", true);
-          video.play();
-          requestAnimationFrame(tick);
-      });
-	
-      function tick() {
-          if (video.readyState === video.HAVE_ENOUGH_DATA) {
-              canvasElement.height = video.videoHeight;
-              canvasElement.width = video.videoWidth;
-              canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-              var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-              var code = jsQR(imageData.data, imageData.width, imageData.height, {
-                  inversionAttempts: "dontInvert",
-              });
-              if (code) {
-                  document.getElementById("qr").value = code.data;
-          }
-          requestAnimationFrame(tick);
-      }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        requestAnimationFrame(tick);
+    }).catch(function(err) {
+        console.error("カメラアクセスエラー:", err);
+        canvasElement.style.display = 'none';
+        const errorMsg = document.createElement('div');
+        errorMsg.textContent = 'カメラにアクセスできませんでした。ブラウザの設定を確認してください。';
+        errorMsg.style.color = 'red';
+        canvasElement.parentNode.insertBefore(errorMsg, canvasElement);
+    });
+
+    function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            // キャンバスのサイズを動画に合わせて設定
+            canvasElement.height = video.videoHeight;
+            canvasElement.width = video.videoWidth;
+            
+            // CSSスタイルでの表示サイズも設定
+            const aspectRatio = video.videoWidth / video.videoHeight;
+            const maxWidth = Math.min(video.videoWidth, 600); // 最大幅を600pxに制限
+            canvasElement.style.width = maxWidth + 'px';
+            canvasElement.style.height = (maxWidth / aspectRatio) + 'px';
+            
+            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+            if (code) {
+                document.getElementById("qr").value = code.data;
+            }
+        }
+        requestAnimationFrame(tick);
     }
 
     document.getElementById('password').addEventListener('keyup', (e) => {
